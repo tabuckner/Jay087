@@ -42,7 +42,7 @@ body {
 }
 
 .wrapper {
-  width: 1442px;
+  width: calc(100vw - 1px);
   border-right: 1px solid #f2f2f2;
   border-bottom: 1px solid #f2f2f2;
   display: flex;

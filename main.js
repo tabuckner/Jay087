@@ -3,7 +3,7 @@ const wrapper = document.querySelector(".wrapper");
 const body = document.querySelector("body");
 const box = document.querySelectorAll(".box");
 let leftMargin = 60; //px
-let hoverExtendFlag = false; // flag to update if on hover panels are extended
+let panelsAreExtended = false; // flag to update if on hover panels are extended
 let boxesFlagArray = []; // flag for stacked panels
 for (var i = 0; i < boxes.length; i++) {
   boxesFlagArray.push({
@@ -11,6 +11,10 @@ for (var i = 0; i < boxes.length; i++) {
     "isExpanded": false
   });
 }
+
+wrapper.addEventListener("scroll", scrollWrap);
+boxes.forEach((box, index) => box.addEventListener("mouseenter", hoverAnimations));
+boxes.forEach((box, index) => box.addEventListener("mouseleave", hoverAnimations));
 
 function scrollWrap(e) {
   let scrollCoord = wrapper.scrollLeft; // horizontal scroll value
@@ -24,11 +28,11 @@ function scrollWrap(e) {
 
     box.style.left = `${leftMarginStop}px`;
 
-    // controll shadow of all 0+ elements
+    // control shadow of all 0+ elements
     if (leftSideOfCurrent <= leftMarginStop) {
       box.nextElementSibling.classList.add("shadow");
     }
-    // controll removal of shadow of all 0+ elements
+    // control removal of shadow of all 0+ elements
     if (leftSideOfNextItem === rightSideOfCurrent) {
       box.nextElementSibling.classList.remove("shadow");
     }
@@ -53,46 +57,63 @@ function scrollWrap(e) {
   });
 }
 
-function onHover(event) {
-  const indexedElement = boxes.indexOf(this);
-  const isPanelStacked = boxesFlagArray[indexedElement].isStacked;
-  const fromBoxIndex = boxes.indexOf(event.fromElement);
-  const toBoxIndex = boxes.indexOf(event.toElement);
+function hoverAnimations(event) {
+  console.log(event);
+  let meta = {};
+  meta.targetElementIndex = boxes.indexOf(this); // TODO: Do we need this?
+  meta.isPanelStacked = boxesFlagArray[boxes.indexOf(this)].isStacked;
+  meta.fromBoxIndex = boxes.indexOf(event.fromElement);
+  meta.toBoxIndex = boxes.indexOf(event.toElement);
+  meta.fromBodyOrWrapper = (event.fromElement == body || event.fromElement == wrapper);
+  // Is there an edge case we're missing? ^
+  meta.fromBox = event.fromElement.classList.contains('box')
+  meta.isBox = event.toElement.classList.contains("box");
+  
+  if (event.type === 'mouseenter' && meta) {
+    onHover(event, meta);
+  } else if (event.type === 'mouseleave' && meta) {
+    onHoverLeave(event, meta)
+  }
+}
 
-  if ((event.fromElement == body || event.fromElement == wrapper) && event.toElement.classList.contains("box") && isPanelStacked && !hoverExtendFlag) {
+function onHover(event, meta) {
+  const boxShouldAnim = meta.fromBodyOrWrapper && meta.isBox && meta.isPanelStacked && !meta.panelsAreExtended;
+
+  if (boxShouldAnim) {
     // when from body to box, extend all pannels from hover + 100px
-    for (let i = indexedElement + 1; i < boxes.length; i++) {
-      const iCoord = boxes[i].getBoundingClientRect();
-      boxes[i].style.left = `${iCoord.left + 100}px`;
-      boxesFlagArray[i].isExpanded = true;
+    for (let box of boxes) {
+      const boxIndex = boxes.indexOf(box);
+      if (boxIndex > meta.targetElementIndex) {
+        const boxCoord = box.getBoundingClientRect();
+        box.style.left = `${boxCoord.left + 100}px`;
+        boxesFlagArray[boxIndex].isExpanded = true; // TODO: Change isExpanded to somethign that makes more sense. 
+      }
     }
-    hoverExtendFlag = true;
+    panelsAreExtended = true;
   }
 }
 
-function onHoverLeave(event) {
-  const indexedElement = boxes.indexOf(this);
-  const isPanelStacked = boxesFlagArray[indexedElement].isStacked;
-  const fromBoxIndex = boxes.indexOf(event.fromElement);
-  const toBoxIndex = boxes.indexOf(event.toElement);
+function onHoverLeave(event, meta) {
+  // const boxShouldAnim = meta.fromBodyOrWrapper && meta.isBox && meta.panelsAreExtended;
+  // Is this logic correct? ^
+  const boxShouldAnim = meta.fromBox;
 
-  if ((event.toElement == body || event.toElement == wrapper) && event.fromElement.classList.contains("box") && hoverExtendFlag) {
-    // controll the mouse from box to body when left margin is narrow or extended
+  if (boxShouldAnim) {
+    // control the mouse from box to body when left margin is narrow or extended
     if (leftMargin === 20) {
-      for (let i = 0; i < boxes.length; i++) {
-        boxes[i].style.left = `${20 * i}px`; // set all panels back to left margin multiply 20px
-        boxesFlagArray[i].isExpanded = true;
-      }
+      revertMargin(20);
     } else if (leftMargin === 60) {
-      for (let i = 0; i < boxes.length; i++) {
-        boxes[i].style.left = `${60 * i}px`; // set all panels back to left margin multiply 60px
-        boxesFlagArray[i].isExpanded = true;
-      }
+      revertMargin(60);
     }
-    hoverExtendFlag = false;
+    panelsAreExtended = false;
   }
 }
 
-wrapper.addEventListener("scroll", scrollWrap);
-boxes.forEach((box, index) => box.addEventListener("mouseenter", onHover));
-boxes.forEach((box, index) => box.addEventListener("mouseleave", onHoverLeave));
+function revertMargin(multiplier) { // TODO: Refactor onHoverLeave to avoid iterating through entire array
+  multiplier = Number(multiplier);
+
+  for (let i = 0; i < boxes.length; i++) {
+    boxes[i].style.left = `${multiplier * i}px`;
+    boxesFlagArray[i].isExpanded = true;
+  }
+}
