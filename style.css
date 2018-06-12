@@ -31,10 +31,10 @@ body {
 .box7 {
   position: sticky;
   z-index: 1;
-  -webkit-transition: box-shadow 0.5s linear, left 0.2s;
-  -moz-transition: box-shadow 0.5s linear, left 0.2s;
-  -o-transition: box-shadow 0.5s linear, left 0.2s;
-  transition: box-shadow 0.5s linear, left 0.2s;
+  -webkit-transition: box-shadow 0.5s linear, transform 0.2s;
+  -moz-transition: box-shadow 0.5s linear, transform 0.2s;
+  -o-transition: box-shadow 0.5s linear, transform 0.2s;
+  transition: box-shadow 0.5s linear, transform 0.2s;
 }
 
 .box7 {
